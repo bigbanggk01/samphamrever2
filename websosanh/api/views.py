@@ -2,6 +2,7 @@ from itertools import product
 from multiprocessing import context
 from typing import Set
 from unicodedata import category
+from urllib import response
 from django.contrib.auth.models import User, Group
 from rest_framework import viewsets
 from rest_framework import permissions
@@ -79,13 +80,59 @@ class CategoryDetail(APIView):
         snippet.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-class ProductList(APIView):
-    def get(self, request,format=None, **kwargs):
-        catid = kwargs.get('catid')
-        products = Product.objects.all().select_related().filter(category=catid)
+class ProductSearch(APIView):
+    def get(self, request, format =None):
+        query = request.query_params.get('query')
+        products =Product.objects.filter(product_name__search=query)
+        offset = request.query_params.get('offset')
+        limit = request.query_params.get('limit')
+        order = request.query_params.get('order')
+        orderField = request.query_params.get('orderField')
+        if order == 'asc':
+            products =products.order_by(orderField)
+        elif order == 'dsc':
+            products = products.order_by('-'+orderField)
         
+        if offset is not None and limit is not None:
+            offset = int(offset)
+            limit = int(limit)
+            products = products[offset:offset+limit]
         serializer = ProductSerializer(products, many=True)
+        return Response(serializer.data)
 
+class ProductList(APIView):
+    def get(self, request, format=None, **kwargs):
+        categoryId = request.query_params.get('categoryId')
+        offset = request.query_params.get('offset')
+        limit = request.query_params.get('limit')
+        order = request.query_params.get('order')
+        orderField = request.query_params.get('orderField')
+        product = None
+        if categoryId is None:
+            products = Product.objects.select_related().all()
+        else:
+            categoryId = int(categoryId)
+            products = Product.objects.select_related().filter(category = categoryId)
+        
+        if order == 'asc':
+            products =products.order_by(orderField)
+        elif order == 'dsc':
+            products = products.order_by('-'+orderField)
+        
+        if offset is not None and limit is not None:
+            offset = int(offset)
+            limit = int(limit)
+            products = products[offset:offset+limit]
+        
+        # elif categoryId is not None:
+        #     categoryId = int(categoryId)
+        #     if(offset and limit) is not None:
+        #         offset = int(offset)
+        #         limit = int(limit)
+        #         products = Product.objects.select_related().filter(category=categoryId)[offset: offset+limit]
+        #     else:
+        #         products = Product.objects.select_related().filter(category = categoryId)
+        serializer = ProductSerializer(products, many=True)
         return Response(serializer.data)
 
     def post(self, request, format=None):

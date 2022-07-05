@@ -31,13 +31,12 @@ class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = ['id', 
-                'name', 
+                'product_name', 
                 'price', 
                 'url', 
                 'imageLink', 
-                'website', 
-                'vote',  
-                'slug'
+                'website',
+                'category'
                 ]
 class RawProductSerializer(serializers.ModelSerializer):
     class Meta:
